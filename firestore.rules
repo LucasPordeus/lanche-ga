@@ -1,0 +1,120 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // IMPORTANTE: mantenha este e-mail igual ao VITE_ADMIN_EMAIL do .env.
+    // É o único e-mail que pode se auto-cadastrar já como admin aprovado.
+    function emailAdmin() {
+      return request.auth.token.email.lower() == "pordeusg1@gmail.com";
+    }
+
+    function logado() { return request.auth != null; }
+    function meuDoc() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
+    function aprovado() { return logado() && meuDoc().status == "aprovado"; }
+    function admin() { return aprovado() && meuDoc().papel == "admin"; }
+
+    match /users/{uid} {
+      allow read: if aprovado() || request.auth.uid == uid;
+
+      // usuário cria o próprio doc: como membro pendente, ou como admin aprovado
+      // se o e-mail bater com o admin configurado (bootstrap do primeiro admin).
+      allow create: if request.auth.uid == uid
+                    && request.resource.data.email == request.auth.token.email
+                    && (
+                      (request.resource.data.papel == "membro"
+                        && request.resource.data.status == "pendente")
+                      || (emailAdmin()
+                        && request.resource.data.papel == "admin"
+                        && request.resource.data.status == "aprovado")
+                    );
+
+      // usuário edita apenas nome/foto; admin edita tudo
+      allow update: if admin()
+                    || (request.auth.uid == uid
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["nome","foto"]));
+    }
+
+    // Data "yyyy-MM-dd" já chegou? (meia-noite UTC do dia; no Brasil libera às 21h da véspera)
+    function naoFuturo(dataId) {
+      let p = dataId.split('-');
+      return timestamp.date(int(p[0]), int(p[1]), int(p[2])) <= request.time;
+    }
+
+    function ehConfirmacao(status) {
+      return status in ["entregue", "nao_entregue"];
+    }
+
+    // Membro aceitando uma troca: o mesmo batch marca a troca como aceita e inverte
+    // os responsáveis das duas datas, exatamente como estavam no pedido.
+    function trocaAceitaValida(id) {
+      let caminho = /databases/$(database)/documents/trocas/$(request.resource.data.trocaId);
+      let antes = get(caminho).data;
+      let depois = getAfter(caminho).data;
+      return request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(["responsavelUid", "trocaId", "atualizadoEm"])
+          && resource.data.status == "agendado"
+          && antes.status == "pendente"
+          && depois.status == "aceita"
+          && antes.destinatarioUid == request.auth.uid
+          && (
+            (id == antes.sabado
+              && resource.data.responsavelUid == antes.solicitanteUid
+              && request.resource.data.responsavelUid == antes.destinatarioUid)
+            || (id == antes.sabadoDestino
+              && resource.data.responsavelUid == antes.destinatarioUid
+              && request.resource.data.responsavelUid == antes.solicitanteUid)
+          );
+    }
+
+    match /sabados/{id} {
+      allow read: if aprovado();
+      allow create: if admin() && !ehConfirmacao(request.resource.data.status);
+      allow delete: if admin();
+      // só o admin confirma entrega ou falta, e nunca para datas futuras
+      allow update: if admin()
+                    && (!ehConfirmacao(request.resource.data.status) || naoFuturo(id));
+      allow update: if aprovado() && trocaAceitaValida(id);
+    }
+
+    match /indisponibilidades/{id} {
+      allow read: if aprovado();
+      allow create: if aprovado() && (request.resource.data.uid == request.auth.uid || admin());
+      allow delete: if aprovado() && (resource.data.uid == request.auth.uid || admin());
+    }
+
+    // Troca = o solicitante oferece o próprio sábado (`sabado`) pelo sábado do colega
+    // (`sabadoDestino`). Só vale pedir com datas que são mesmo de cada um.
+    match /trocas/{id} {
+      allow read: if aprovado();
+      allow create: if aprovado()
+                    && request.resource.data.solicitanteUid == request.auth.uid
+                    && request.resource.data.destinatarioUid != request.auth.uid
+                    && request.resource.data.status == "pendente"
+                    && get(/databases/$(database)/documents/sabados/$(request.resource.data.sabado))
+                         .data.responsavelUid == request.auth.uid
+                    && get(/databases/$(database)/documents/sabados/$(request.resource.data.sabadoDestino))
+                         .data.responsavelUid == request.resource.data.destinatarioUid;
+      // destinatário aceita (junto com a inversão das datas) ou recusa; solicitante cancela
+      allow update: if aprovado()
+                    && resource.data.status == "pendente"
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["status", "respondidaEm"])
+                    && (
+                      (resource.data.destinatarioUid == request.auth.uid
+                        && request.resource.data.status == "recusada")
+                      || (resource.data.destinatarioUid == request.auth.uid
+                        && request.resource.data.status == "aceita"
+                        && getAfter(/databases/$(database)/documents/sabados/$(resource.data.sabado))
+                             .data.responsavelUid == request.auth.uid)
+                      || (resource.data.solicitanteUid == request.auth.uid
+                        && request.resource.data.status == "cancelada")
+                    );
+    }
+
+    // feed de atividades: qualquer aprovado registra o próprio evento; só admin lê
+    match /atividades/{id} {
+      allow read: if admin();
+      allow create: if aprovado() && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if false;
+    }
+  }
+}

@@ -1,0 +1,167 @@
+@import "tailwindcss";
+@import "@fontsource/instrument-serif/400.css";
+@import "@fontsource/ibm-plex-sans/400.css";
+@import "@fontsource/ibm-plex-sans/500.css";
+@import "@fontsource/ibm-plex-sans/600.css";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+
+@theme {
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Instrument Serif", ui-serif, Georgia, serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  /* papel e tinta (substitui a escala slate) */
+  --color-white: #fffcf5;
+  --color-slate-50: #f5efe2;
+  --color-slate-100: #ece4d2;
+  --color-slate-200: #ddd3bd;
+  --color-slate-300: #c6b9a0;
+  --color-slate-400: #b0a58f;
+  --color-slate-500: #6d6452;
+  --color-slate-600: #51493b;
+  --color-slate-700: #3a342a;
+  --color-slate-800: #28231c;
+  --color-slate-900: #1d1914;
+  --color-slate-950: #14110d;
+
+  /* acento terracota (substitui indigo e violet) */
+  --color-indigo-50: #fbece6;
+  --color-indigo-100: #f6d7cb;
+  --color-indigo-200: #eeb4a0;
+  --color-indigo-300: #e58c70;
+  --color-indigo-400: #e0785a;
+  --color-indigo-500: #cc5a3c;
+  --color-indigo-600: #b34427;
+  --color-indigo-700: #8f3520;
+  --color-indigo-800: #6d281a;
+  --color-indigo-900: #4a1b12;
+
+  /* oliva: entregue / aprovado */
+  --color-emerald-50: #eef1e0;
+  --color-emerald-100: #dde4c2;
+  --color-emerald-200: #c3cf98;
+  --color-emerald-300: #a4b56d;
+  --color-emerald-400: #8fa356;
+  --color-emerald-500: #6f8540;
+  --color-emerald-600: #566a30;
+  --color-emerald-700: #455627;
+  --color-emerald-800: #36441f;
+  --color-emerald-900: #283317;
+
+  /* mostarda: pendente / atenção */
+  --color-amber-50: #fbf3d9;
+  --color-amber-100: #f6e7b0;
+  --color-amber-200: #efd57a;
+  --color-amber-300: #e6c04a;
+  --color-amber-400: #dcae2d;
+  --color-amber-500: #c2931a;
+  --color-amber-600: #a07612;
+  --color-amber-700: #7e5d10;
+  --color-amber-800: #62490f;
+  --color-amber-900: #48350c;
+
+  /* tijolo: erro / cancelado */
+  --color-red-50: #fbe9e7;
+  --color-red-100: #f5cfcb;
+  --color-red-200: #ecaaa4;
+  --color-red-300: #e38880;
+  --color-red-400: #ea7a7a;
+  --color-red-500: #cf4545;
+  --color-red-600: #ad2f2f;
+  --color-red-700: #8a2424;
+  --color-red-800: #6b1c1c;
+  --color-red-900: #4a1414;
+
+  /* cantos quase retos */
+  --radius-lg: 3px;
+  --radius-xl: 4px;
+  --radius-2xl: 6px;
+}
+
+:root {
+  color-scheme: light dark;
+}
+
+html, body, #root {
+  min-height: 100%;
+}
+
+body {
+  @apply bg-slate-50 font-sans text-slate-900 antialiased dark:bg-slate-900 dark:text-slate-100;
+  -webkit-tap-highlight-color: transparent;
+}
+
+h1, h2 {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+h1 {
+  font-size: 1.875rem;
+  line-height: 1.1;
+}
+
+h2 {
+  font-size: 1.375rem;
+  line-height: 1.2;
+}
+
+input, select, textarea, button {
+  font-size: 16px;
+}
+
+button, a, select, input {
+  transition: background-color 150ms ease-out, color 150ms ease-out, border-color 150ms ease-out;
+}
+
+button:not(:disabled) {
+  cursor: pointer;
+}
+
+/* datas e números: medida, em mono tabular */
+time, .num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-indigo-600);
+  outline-offset: 2px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :focus-visible {
+    outline-color: var(--color-indigo-400);
+  }
+}
+
+::selection {
+  background: var(--color-indigo-600);
+  color: var(--color-white);
+}
+
+html {
+  scrollbar-color: var(--color-slate-300) transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
