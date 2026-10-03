@@ -92,3 +92,7 @@ export const IconUser = (p) =>
       <path d="M4 21c0-4 3.5-6 8-6s8 2 8 6" />
     </>,
   )
+
+export const IconChevronLeft = (p) => base(p, <path d="M15 5l-7 7 7 7" />)
+
+export const IconChevronRight = (p) => base(p, <path d="M9 5l7 7-7 7" />)
